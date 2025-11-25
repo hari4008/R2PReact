@@ -1,0 +1,368 @@
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>Create React App with Redux - Blog</title>
+
+    <style>
+        body {
+            font-family: "Inter", sans-serif;
+            padding: 40px;
+            background: #ffffff;
+            color: #222;
+            line-height: 1.7;
+        }
+
+        h1,
+        .section-title,
+        .code-block {
+            width: 60%;
+            margin-left: auto;
+            margin-right: auto;
+        }
+
+        h1 {
+            font-size: 38px;
+            font-weight: 700;
+            margin-bottom: 20px;
+            text-align: center;
+        }
+
+        .section-title {
+            font-size: 20px;
+            font-weight: 600;
+            margin-top: 35px;
+            margin-bottom: 10px;
+        }
+
+        .code-block {
+            background: #0d0d0d;
+            color: #fff;
+            padding: 22px;
+            border-radius: 12px;
+            font-family: "Fira Code", monospace;
+            white-space: pre-wrap;
+            font-size: 17px;
+            margin-top: 10px;
+            overflow-x: auto;
+        }
+    </style>
+</head>
+
+<body>
+
+    <h1>Create React App + Redux Toolkit Setup Guide</h1>
+
+    <!-- 1 -->
+    <h4 class="section-title">1. Create the React App</h4>
+    <div class="code-block">
+npx create-react-app my-app
+    </div>
+
+    <!-- 2 -->
+    <h4 class="section-title">2. Install Redux Toolkit + React-Redux, Formik, Yup, Axios & i18next</h4>
+    <div class="code-block">
+npm install @reduxjs/toolkit react-redux axios formik yup i18next react-i18next
+    </div>
+
+    <!-- 3 -->
+    <h4 class="section-title">3. Create Folder Structure</h4>
+    <div class="code-block">
+my-app/
+├── public/
+├── src/
+│   ├── api/
+│   ├── assets/
+│   ├── components/
+│   ├── context/
+│   ├── helpers/
+│   ├── layout/
+│   ├── locals/
+│   │   ├── en.json
+│   │   └── ar.json
+│   ├── routes/
+│   │   ├── PrivateRoutes.js
+│   │   └── AppRoutes.js
+│   ├── pages/
+│   ├── services/
+│   ├── redux/
+│   │   ├── slices/
+│   │   └── store.js
+│   ├── i18n/
+│   │   └── i18n.js
+│   ├── App.js
+│   └── index.js
+├── package.json
+└── README.md
+    </div>
+
+    <!-- 4 -->
+    <h4 class="section-title">4. Create AppRoutes & PrivateRoutes</h4>
+    <div class="code-block">
+&lt;!-- AppRoutes.js --&gt;
+
+import React from "react";
+import { Route, Routes } from "react-router-dom";
+import Home from "../pages/Home/Home";
+import AboutUs from "../pages/AboutUs/AboutUs";
+
+const AppRoutes = () =&gt; {
+    return (
+        &lt;&gt;
+            &lt;Routes&gt;
+                &lt;Route path="/" element={&lt;Home /&gt;} /&gt;
+                &lt;Route path="/about-us" element={&lt;AboutUs /&gt;} /&gt;
+            &lt;/Routes&gt;
+        &lt;/&gt;
+    );
+};
+
+export default AppRoutes;
+
+
+
+&lt;!-- PrivateRoutes.js --&gt;
+
+import React from "react";
+import { Navigate } from "react-router-dom";
+
+let token = localStorage.getItem("token");
+let role = localStorage.getItem("role");
+
+const PrivateRoutes = ({ children }) =&gt; {
+    return token && role === "Customer" ? children : &lt;Navigate to="/login" /&gt;;
+};
+
+export default PrivateRoutes;
+    </div>
+
+    <!-- 5 -->
+    <h4 class="section-title">5. Create i18n Configuration</h4>
+    <div class="code-block">
+import i18next from "i18next";
+import en from "./locales/en.json";
+import ar from "./locales/ar.json";
+
+const lang = localStorage.getItem("language");
+
+i18next.init({
+    interpolation: { escapeValue: false },
+    lng: lang ? lang : "en",
+    fallbackLng: lang ? lang : "en",
+    resources: {
+        en: { translation: en },
+        ar: { translation: ar }
+    }
+});
+
+export default i18next;
+    </div>
+
+    <!-- 6 -->
+    <h4 class="section-title">6. Base API</h4>
+    <div class="code-block">
+import axios from "axios";
+
+const baseAPI = axios.create({
+    baseURL: process.env.REACT_APP_API_BASE_URL,
+});
+
+export default baseAPI;
+    </div>
+
+    <!-- 7 -->
+    <h4 class="section-title">7. Helpers</h4>
+    <div class="code-block">
+export function authHeader() {
+    let user = localStorage.getItem("token");
+    let language = localStorage.getItem("language");
+
+    if (user) {
+        return { Authorization: `Bearer ${user}`, language: language };
+    } else {
+        return {};
+    }
+}
+
+export function authHeaderWithImage() {
+    let user = localStorage.getItem("token");
+    let language = localStorage.getItem("language");
+
+    if (user) {
+        return {
+            Authorization: `Bearer ${user}`,
+            "Content-Type": "multipart/form-data",
+            language: language,
+        };
+    } else {
+        return {};
+    }
+}
+    </div>
+
+    <!-- 8 -->
+    <h4 class="section-title">8. Redux Provider + i18next + Router</h4>
+    <div class="code-block">
+import React from "react";
+import ReactDOM from "react-dom/client";
+import App from "./App";
+import { BrowserRouter } from "react-router-dom";
+import i18next from "./i18n";
+import { I18nextProvider } from "react-i18next";
+import { Provider } from "react-redux";
+import store from "./redux/store";
+import AuthProvider from "./context/AuthContext";
+
+const root = ReactDOM.createRoot(document.getElementById("root"));
+
+root.render(
+    &lt;I18nextProvider i18n={i18next}&gt;
+        &lt;BrowserRouter basename={"/"}&gt;
+            &lt;AuthProvider&gt;
+                &lt;Provider store={store}&gt;
+                    &lt;App /&gt;
+                &lt;/Provider&gt;
+            &lt;/AuthProvider&gt;
+        &lt;/BrowserRouter&gt;
+    &lt;/I18nextProvider&gt;
+);
+    </div>
+
+    <!-- 9 -->
+    <h4 class="section-title">9. Redux Store</h4>
+    <div class="code-block">
+import { combineReducers, configureStore } from "@reduxjs/toolkit";
+import UserSlice from "./slices/UserSlice";
+
+const rootReducer = combineReducers({
+    userStore: UserSlice,
+});
+
+const store = configureStore({
+    reducer: rootReducer,
+    devTools: true,
+    middleware: (getDefaultMiddleware) =&gt;
+        getDefaultMiddleware({
+            serializableCheck: false,
+        }),
+});
+
+export default store;
+    </div>
+
+    <!-- 10 -->
+    <h4 class="section-title">10. Sample Service</h4>
+    <div class="code-block">
+import baseAPI from "../api/baseApi";
+import { authHeader, authHeaderWithImage } from "../helpers/authHeader";
+import { toast } from "react-toastify";
+
+const getUsers = async (data) =&gt; {
+    try {
+        const res = await baseAPI.get(
+            `get-users?page=${data.page}&search=${data.search}`,
+            { headers: authHeader() }
+        );
+        return res.data;
+    } catch (error) {
+        console.log(error);
+    }
+};
+
+const addUser = async (data) =&gt; {
+    try {
+        const formdata = new FormData();
+        formdata.append("name", data.name);
+        formdata.append("image", data.image);
+        formdata.append("email", data.email);
+
+        const res = await baseAPI.post(`add-user`, formdata, {
+            headers: authHeaderWithImage(),
+        });
+
+        return res.data;
+    } catch (error) {
+        console.log(error);
+        toast.error(error?.response?.data?.message);
+    }
+};
+
+const UserService = {
+    getUsers,
+    addUser,
+};
+
+export default UserService;
+    </div>
+
+    <!-- 11 -->
+    <h4 class="section-title">11. Sample Slice</h4>
+    <div class="code-block">
+import { createSlice, createAsyncThunk } from "@reduxjs/toolkit";
+import UserService from "../../services/UserService";
+
+export const fetchUsers = createAsyncThunk(
+    "user/fetchUsers",
+    async (data) =&gt; {
+        const res = await UserService.getUsers(data);
+        return res;
+    }
+);
+
+export const createUser = createAsyncThunk(
+    "user/createUser",
+    async (data, thunkAPI) =&gt; {
+        const res = await UserService.addUser(data);
+        if (res.status === true) {
+            thunkAPI.dispatch(fetchUsers({ page: 1, search: "" }));
+        }
+        return res;
+    }
+);
+
+const initialState = {
+    loading: false,
+    users: [],
+    user: null,
+    total_pages: 0,
+    total_items: 0,
+};
+
+const userSlice = createSlice({
+    name: "user",
+    initialState,
+    extraReducers(builder) {
+        builder
+            .addCase(createUser.pending, (state) =&gt; {
+                state.loading = true;
+            })
+            .addCase(createUser.fulfilled, (state, { payload }) =&gt; {
+                state.loading = false;
+                state.user = payload;
+            })
+            .addCase(createUser.rejected, (state) =&gt; {
+                state.loading = false;
+            });
+            .addCase(fetchUsers.pending, (state) =&gt; {
+                state.loading = true;
+            })
+            .addCase(fetchUsers.fulfilled, (state, { payload }) =&gt; {
+                state.loading = false;
+                state.users = payload?.data;
+                state.total_pages = payload?.total_pages;
+                state.total_items = payload?.total_items;
+            });
+            .addCase(fetchUsers.rejected, (state) =&gt; {
+                state.loading = false;
+            });
+    },
+});
+
+export default userSlice.reducer;
+    </div>
+
+</body>
+
+</html>
